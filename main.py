@@ -18,6 +18,20 @@ brown = (54, 35, 18)
 beige = (247, 232, 208)
 green = (25, 120, 12) # Background color
 
+# Title for the menu
+title_surf = pygame.Surface((810, 162))
+title_surf.fill(brown)
+title_rect = title_surf.get_rect(center=(screen.get_rect().centerx, screen.get_rect().centery - 324))
+title_text = title_font.render("Chess Game", True, 'White')
+title_text_rect = title_text.get_rect(center=title_rect.center)
+
+# Button for playing against a bot
+bot_surf = pygame.Surface((540, 135))
+bot_surf.fill(brown)
+bot_rect = bot_surf.get_rect(center=(screen.get_rect().centerx, screen.get_rect().centery - 108))
+bot_text = font.render("Play Against A Bot", True, 'White')
+bot_text_rect = bot_text.get_rect(center=bot_rect.center)
+
 running = True
 mode = 0 # 0 will be for the menu, 1 will be for playing against a bot, everything else will be for the variants
 
@@ -146,8 +160,27 @@ standard_board[(7, 7)] = [Piece((7, 7), rook_rules[0], rook_rules[1], rook_rules
 
 GameBoard = Board(standard_board)
 
+board_rects = []
+
+for i in range(8):
+    for k in range(8):
+        board_rects.append(pygame.Rect(140 + k * 100, 732 - i * 100, 100, 100))
+
+def draw_board(Board):
+    # The variable Board will eventually be used to draw the pieces
+    for i in range(8):
+        for k in range(8):
+            if i % 2 == 0 and k % 2 == 0 or i % 2 == 1 and k % 2 == 1:
+                pygame.draw.rect(screen, brown, board_rects[i * 8 + k])
+            else:
+                pygame.draw.rect(screen, beige, board_rects[i * 8 + k])
+
 # Initial menu screen
 screen.fill(green)
+screen.blit(title_surf, title_rect)
+screen.blit(title_text, title_text_rect)
+screen.blit(bot_surf, bot_rect)
+screen.blit(bot_text, bot_text_rect)
 
 # Game loop
 while running:
@@ -156,7 +189,10 @@ while running:
             running = False
         if event.type == pygame.MOUSEMOTION:
             mouse_pos = pygame.mouse.get_pos()
-
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if mode == 0:
+                if bot_rect.collidepoint(mouse_pos):
+                    mode = 1
     pygame.display.flip()
     clock.tick(60)
 
