@@ -2,8 +2,14 @@ import pygame
 import copy
 import sys
 import os
+import random
 
 pygame.init()
+
+clock = pygame.time.Clock()
+mouse_pos = pygame.mouse.get_pos()
+screen = pygame.display.set_mode((1080, 864))
+pygame.display.set_caption("Chess")
 
 # The function below and the definition of music_path were made using AI
 def get_resource_path(relative_path):
@@ -16,10 +22,44 @@ def get_resource_path(relative_path):
 music_path = get_resource_path(os.path.join("sfx", "piece_moving.ogg"))
 pygame.mixer.music.load(music_path)
 
-clock = pygame.time.Clock()
-mouse_pos = pygame.mouse.get_pos()
-screen = pygame.display.set_mode((1080, 864))
-pygame.display.set_caption("Chess")
+b_bishop_path = get_resource_path(os.path.join("pieces", "b_bishop_png_shadow_128px.png"))
+b_king_path = get_resource_path(os.path.join("pieces", "b_king_png_shadow_128px.png"))
+b_knight_path = get_resource_path(os.path.join("pieces", "b_knight_png_shadow_128px.png"))
+b_pawn_path = get_resource_path(os.path.join("pieces", "b_pawn_png_shadow_128px.png"))
+b_queen_path = get_resource_path(os.path.join("pieces", "b_queen_png_shadow_128px.png"))
+b_rook_path = get_resource_path(os.path.join("pieces", "b_rook_png_shadow_128px.png"))
+w_bishop_path = get_resource_path(os.path.join("pieces", "w_bishop_png_shadow_128px.png"))
+w_king_path = get_resource_path(os.path.join("pieces", "w_king_png_shadow_128px.png"))
+w_knight_path = get_resource_path(os.path.join("pieces", "w_knight_png_shadow_128px.png"))
+w_pawn_path = get_resource_path(os.path.join("pieces", "w_pawn_png_shadow_128px.png"))
+w_queen_path = get_resource_path(os.path.join("pieces", "w_queen_png_shadow_128px.png"))
+w_rook_path = get_resource_path(os.path.join("pieces", "w_rook_png_shadow_128px.png"))
+
+b_bishop = pygame.image.load(b_bishop_path).convert_alpha()
+b_king = pygame.image.load(b_king_path).convert_alpha()
+b_knight = pygame.image.load(b_knight_path).convert_alpha()
+b_pawn = pygame.image.load(b_pawn_path).convert_alpha()
+b_queen = pygame.image.load(b_queen_path).convert_alpha()
+b_rook = pygame.image.load(b_rook_path).convert_alpha()
+w_bishop = pygame.image.load(w_bishop_path).convert_alpha()
+w_king = pygame.image.load(w_king_path).convert_alpha()
+w_knight = pygame.image.load(w_knight_path).convert_alpha()
+w_pawn = pygame.image.load(w_pawn_path).convert_alpha()
+w_queen = pygame.image.load(w_queen_path).convert_alpha()
+w_rook = pygame.image.load(w_rook_path).convert_alpha()
+
+b_bishop = pygame.transform.scale(b_bishop, (100, 100))
+b_king = pygame.transform.scale(b_king, (100, 100))
+b_knight = pygame.transform.scale(b_knight, (100, 100))
+b_pawn = pygame.transform.scale(b_pawn, (100, 100))
+b_queen = pygame.transform.scale(b_queen, (100, 100))
+b_rook = pygame.transform.scale(b_rook, (100, 100))
+w_bishop = pygame.transform.scale(w_bishop, (100, 100))
+w_king = pygame.transform.scale(w_king, (100, 100))
+w_knight = pygame.transform.scale(w_knight, (100, 100))
+w_pawn = pygame.transform.scale(w_pawn, (100, 100))
+w_queen = pygame.transform.scale(w_queen, (100, 100))
+w_rook = pygame.transform.scale(w_rook, (100, 100))
 
 # Font sizes I might need for text
 font = pygame.font.Font(None, 50)
@@ -69,6 +109,13 @@ bot_surf.fill(brown)
 bot_rect = bot_surf.get_rect(center=(screen.get_rect().centerx, screen.get_rect().centery - 108))
 bot_text = font.render("Play Against A Bot", True, 'White')
 bot_text_rect = bot_text.get_rect(center=bot_rect.center)
+
+# Button that will send you to the menu where you can play against a friend in standard chess or variants
+friend_surf = pygame.Surface((540, 135))
+friend_surf.fill(brown)
+friend_rect = friend_surf.get_rect(center=(screen.get_rect().centerx, screen.get_rect().centery + 108))
+friend_text = font.render("Play Against A Friend", True, 'White')
+friend_text_rect = friend_text.get_rect(center=friend_rect.center)
 
 running = True
 mode = 0 # 0 will be for the menu, 1 will be for playing against a bot, everything else will be for the variants
@@ -196,7 +243,7 @@ standard_board[(5, 0)] = [Piece((5, 0), bishop_rules[0], bishop_rules[1], bishop
 standard_board[(6, 0)] = [Piece((6, 0), knight_rules[0], knight_rules[1], knight_rules[2], "N", True), 3]
 standard_board[(7, 0)] = [Piece((7, 0), rook_rules[0], rook_rules[1], rook_rules[2], "R", True), 5]
 for i in range(8):
-    standard_board[(i, 0)] = [Piece((i, 0), pawn_rules[0], pawn_rules[1], pawn_rules[2], "", True), 1]
+    standard_board[(i, 1)] = [Piece((i, 0), pawn_rules[0], pawn_rules[1], pawn_rules[2], "", True), 1]
 for i in range(4):
     for k in range(8):
         standard_board[(k, 2 + i)] = [0, 0]
@@ -228,12 +275,50 @@ def draw_board(Board):
             else:
                 pygame.draw.rect(screen, beige, board_rects[i * 8 + k])
 
+    for i in range(8):
+        for k in range(8):
+            if Board.board[(k, i)][0] != 0:
+                if Board.board[(k, i)][0].type == "B":
+                    if Board.board[(k, i)][0].first:
+                        screen.blit(w_bishop, (140 + k * 100, 732 - i * 100))
+                    else:
+                        screen.blit(b_bishop, (140 + k * 100, 732 - i * 100))
+                elif Board.board[(k, i)][0].type == "K":
+                    if Board.board[(k, i)][0].first:
+                        screen.blit(w_king, (140 + k * 100, 732 - i * 100))
+                    else:
+                        screen.blit(b_king, (140 + k * 100, 732 - i * 100))
+                elif Board.board[(k, i)][0].type == "N":
+                    if Board.board[(k, i)][0].first:
+                        screen.blit(w_knight, (140 + k * 100, 732 - i * 100))
+                    else:
+                        screen.blit(b_knight, (140 + k * 100, 732 - i * 100))
+                elif Board.board[(k, i)][0].type == "Q":
+                    if Board.board[(k, i)][0].first:
+                        screen.blit(w_queen, (140 + k * 100, 732 - i * 100))
+                    else:
+                        screen.blit(b_queen, (140 + k * 100, 732 - i * 100))
+                elif Board.board[(k, i)][0].type == "R":
+                    if Board.board[(k, i)][0].first:
+                        screen.blit(w_rook, (140 + k * 100, 732 - i * 100))
+                    else:
+                        screen.blit(b_rook, (140 + k * 100, 732 - i * 100))
+                elif Board.board[(k, i)][0].type == "":
+                    if Board.board[(k, i)][0].first:
+                        screen.blit(w_pawn, (140 + k * 100, 732 - i * 100))
+                    else:
+                        screen.blit(b_pawn, (140 + k * 100, 732 - i * 100))
+            else:
+                pass
+
 # Initial menu screen
 screen.fill(green)
 screen.blit(title_surf, title_rect)
 screen.blit(title_text, title_text_rect)
 screen.blit(bot_surf, bot_rect)
 screen.blit(bot_text, bot_text_rect)
+screen.blit(friend_surf, friend_rect)
+screen.blit(friend_text, friend_text_rect)
 
 # Game loop
 while running:
@@ -246,11 +331,16 @@ while running:
             if mode == 0:
                 if bot_rect.collidepoint(mouse_pos):
                     mode = 1
+                    first_turn = random.randint(0, 1) # Decides whether you go first. 0 = You play as black. 1 = You play as white
                     screen.fill(green)
                     current_board = copy.deepcopy(GameBoard)
                     draw_board(current_board)
 
                     screen.blit(info_text, info_text_rect)
+                elif friend_rect.collidepoint(mouse_pos):
+                    mode = -2 # Mode for the menu to play against a friend
+                    screen.fill(green)
+
             if mode == -1:
                 if exit_button_rect.collidepoint(mouse_pos):
                     mode = 0
