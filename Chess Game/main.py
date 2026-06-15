@@ -122,7 +122,7 @@ mode = 0 # 0 will be for the menu, 1 will be for playing against a bot, everythi
 
 def add_doubles(double1, double2, mult=1):
     # This will be useful because I will use tuples of length 2 to store positions
-    return (mult * (double1[0] + double2[0]), mult * (double2[1] + double2[1]))
+    return (mult * (double1[0] + double2[0]), mult * (double1[1] + double2[1]))
 
 def outside(pos):
     # Checks whether something is outside the board
@@ -146,26 +146,41 @@ class Piece:
         # Returns the list of all possible moves for a piece accounting for other pieces
         legal_moves = []
 
-        if not self.limit:
-            for moves in self.moves():
-                if not outside(add_doubles(self.pos, moves)):
-                    if Board.board[add_doubles(self.pos, moves)][0] == 0:
-                        legal_moves.append(add_doubles(self.pos, moves))
-                    else:
-                        pass
-                else:
-                    break
+        if self.type:
+            # Moves for everything other than pawns
 
-        else:
-            for moves in self.moves():
-                for mult in range(1, 8):
-                    if not outside(add_doubles(self.pos, (moves[0] * mult, moves[1] * mult))):
-                        if Board.board[add_doubles(self.pos, (moves[0] * mult, moves[1] * mult))][0] == 0:
-                            legal_moves.append(add_doubles(self.pos, (moves[0] * mult, moves[1] * mult)))
+            if not self.limit:
+                for moves in self.moves:
+                    if not outside(add_doubles(self.pos, moves)):
+                        if Board.board[add_doubles(self.pos, moves)][0] == 0:
+                            legal_moves.append(add_doubles(self.pos, moves))
                         else:
                             pass
                     else:
                         break
+
+            else:
+                for moves in self.moves:
+                    for mult in range(1, 8):
+                        if not outside(add_doubles(self.pos, (moves[0] * mult, moves[1] * mult))):
+                            if Board.board[add_doubles(self.pos, (moves[0] * mult, moves[1] * mult))][0] == 0:
+                                legal_moves.append(add_doubles(self.pos, (moves[0] * mult, moves[1] * mult)))
+                            else:
+                                pass
+                        else:
+                            break
+        else:
+
+            if self.first:
+                if self.pos[1] == 1:
+                    legal_moves = [(self.pos[0], 2), (self.pos[0], 3)]
+                else:
+                    legal_moves = [(self.pos[0], self.pos[1] + 1)]
+            else:
+                if self.pos[1] == 6:
+                    legal_moves = [(self.pos[0], 5), (self.pos[0], 4)]
+                else:
+                    legal_moves = [(self.pos[0], self.pos[1] - 1)]
 
         return legal_moves
 
@@ -174,35 +189,40 @@ class Piece:
         legal_captures = []
 
         if not self.limit:
-            for captures in self.captures():
+            for captures in self.captures:
                 if not outside(add_doubles(self.pos, captures)):
-                    if Board.board[add_doubles(self.pos, captures)][0].first ^ self.first:
-                        legal_captures.append(add_doubles(self.pos, captures))
-                    else:
-                        pass
+                    if Board.board[add_doubles(self.pos, captures)][0] != 0:
+                        if Board.board[add_doubles(self.pos, captures)][0].first ^ self.first:
+                            legal_captures.append(add_doubles(self.pos, captures))
+                        else:
+                            pass
                 else:
                     break
 
         else:
-            for captures in self.captures():
+            for captures in self.captures:
                 for mult in range(1, 8):
                     if not outside(add_doubles(self.pos, (captures[0] * mult, captures[1] * mult))):
-                        if Board.board[add_doubles(self.pos, (captures[0] * mult, captures[1] * mult))][0].first ^ self.first:
-                            legal_captures.append(add_doubles(self.pos, (captures[0] * mult, captures[1] * mult)))
-                        else:
-                            pass
+                        if Board.board[add_doubles(self.pos, (captures[0] * mult, captures[1] * mult))][0] != 0:
+                            if Board.board[add_doubles(self.pos, (captures[0] * mult, captures[1] * mult))][0].first ^ self.first:
+                                legal_captures.append(add_doubles(self.pos, (captures[0] * mult, captures[1] * mult)))
+                            else:
+                                pass
                     else:
                         break
 
+        return legal_captures
+
 # Rules for every piece so that I can easily reuse them for each piece
-pawn_rules = [((0, 1)), ((1, 1), (-1, 1)), False]
+w_pawn_rules = [((0, 1),), ((1, 1), (-1, 1)), False]
+b_pawn_rules = [((0, -1),), ((1, 1), (-1, 1)), False]
 knight_rules = [((1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2), (2, -1), (2, 1))]
 knight_rules.append(knight_rules[0])
 knight_rules.append(False)
 bishop_rules = [((1, 1), (-1, 1), (-1, -1), (1, -1))]
 bishop_rules.append(bishop_rules[0])
 bishop_rules.append(True)
-rook_rules = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+rook_rules = [((1, 0), (0, 1), (-1, 0), (0, -1))]
 rook_rules.append(rook_rules[0])
 rook_rules.append(True)
 queen_rules = [bishop_rules[0] + rook_rules[0]]
@@ -238,17 +258,17 @@ standard_board[(0, 0)] = [Piece((0, 0), rook_rules[0], rook_rules[1], rook_rules
 standard_board[(1, 0)] = [Piece((1, 0), knight_rules[0], knight_rules[1], knight_rules[2], "N", True), 3]
 standard_board[(2, 0)] = [Piece((2, 0), bishop_rules[0], bishop_rules[1], bishop_rules[2], "B", True), 3]
 standard_board[(3, 0)] = [Piece((3, 0), queen_rules[0], queen_rules[1], queen_rules[2], "Q", True), 9]
-standard_board[(4, 0)] = [Piece((4, 0), king_rules[0], king_rules[1], king_rules[1], "K", True), 99]
+standard_board[(4, 0)] = [Piece((4, 0), king_rules[0], king_rules[1], king_rules[2], "K", True), 99]
 standard_board[(5, 0)] = [Piece((5, 0), bishop_rules[0], bishop_rules[1], bishop_rules[2], "B", True), 3]
 standard_board[(6, 0)] = [Piece((6, 0), knight_rules[0], knight_rules[1], knight_rules[2], "N", True), 3]
 standard_board[(7, 0)] = [Piece((7, 0), rook_rules[0], rook_rules[1], rook_rules[2], "R", True), 5]
 for i in range(8):
-    standard_board[(i, 1)] = [Piece((i, 0), pawn_rules[0], pawn_rules[1], pawn_rules[2], "", True), 1]
+    standard_board[(i, 1)] = [Piece((i, 1), w_pawn_rules[0], w_pawn_rules[1], w_pawn_rules[2], "", True), 1]
 for i in range(4):
     for k in range(8):
         standard_board[(k, 2 + i)] = [0, 0]
 for i in range(8):
-    standard_board[(i, 6)] = [Piece((i, 6), pawn_rules[0], pawn_rules[1], pawn_rules[2], "", False), 1]
+    standard_board[(i, 6)] = [Piece((i, 6), b_pawn_rules[0], b_pawn_rules[1], b_pawn_rules[2], "", False), 1]
 standard_board[(0, 7)] = [Piece((0, 7), rook_rules[0], rook_rules[1], rook_rules[2], "R", False), 5]
 standard_board[(1, 7)] = [Piece((1, 7), knight_rules[0], knight_rules[1], knight_rules[2], "N", False), 3]
 standard_board[(2, 7)] = [Piece((2, 7), bishop_rules[0], bishop_rules[1], bishop_rules[2], "B", False), 3]
@@ -335,13 +355,15 @@ while running:
                     screen.fill(green)
                     current_board = copy.deepcopy(GameBoard)
                     draw_board(current_board)
+                    legal_moves = []
+                    turn = 1
 
                     screen.blit(info_text, info_text_rect)
                 elif friend_rect.collidepoint(mouse_pos):
                     mode = -2 # Mode for the menu to play against a friend
                     screen.fill(green)
 
-            if mode == -1:
+            elif mode == -1:
                 if exit_button_rect.collidepoint(mouse_pos):
                     mode = 0
 
@@ -354,14 +376,37 @@ while running:
                 elif return_button_rect.collidepoint(mouse_pos):
                     mode = 1
                     screen.fill(green)
-                    current_board = standard_board.copy()
+                    current_board = copy.deepcopy(GameBoard)
                     draw_board(current_board)
+                    legal_moves = []
 
                     screen.blit(info_text, info_text_rect)
+            elif mode == 1:
+                for i in range(8):
+                    for k in range(8):
+                        if current_board.board[(k, i)][0] != 0:
+                            if current_board.board[(k, i)][0].first and turn and first_turn or not current_board.board[(k, i)][0].first and not turn and not first_turn:
+                                if board_rects[i * 8 + k].collidepoint(mouse_pos):
+                                    try:
+                                        if legal_moves:
+                                            for legal in legal_moves:
+                                                if legal[1] % 2 == 0 and legal[0] % 2 == 0 or legal[1] % 2 == 1 and legal[0] % 2 == 1:
+                                                    pygame.draw.rect(screen, brown, board_rects[legal[1] * 8 + legal[0]])
+                                                else:
+                                                    pygame.draw.rect(screen, beige, board_rects[legal[1] * 8 + legal[0]])
+                                    finally:
+                                        pass
+                                    legal_moves = current_board.board[(k, i)][0].legal_moves(current_board) + current_board.board[(k, i)][0].legal_captures(current_board)
+
+
+                if legal_moves:
+                    for legal in legal_moves:
+                        pygame.draw.circle(screen, 'Blue', (190 + legal[0] * 100, 782 - legal[1] * 100), 20)
+
+
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                print("Pressed")
                 if mode > 0:
                     mode = -1 # Mode for the menu where you can exit whichever mode you are playing
                     screen.fill(green)
